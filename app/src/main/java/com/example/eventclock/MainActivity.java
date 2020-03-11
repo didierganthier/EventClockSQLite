@@ -1,0 +1,82 @@
+package com.example.eventclock;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CalendarView;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import java.util.Date;
+
+public class MainActivity extends AppCompatActivity {
+
+    private mySQLiteDBHandler dbHandler;
+    private EditText editText;
+    private CalendarView calendarView;
+    private Button buttonSave;
+    private String selectedDate;
+    private SQLiteDatabase sqLiteDatabase;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        buttonSave = findViewById(R.id.buttonSave);
+        editText = findViewById(R.id.editText);
+        calendarView = findViewById(R.id.calendarView);
+        buttonSave = findViewById(R.id.buttonSave);
+
+        calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
+            @Override
+            public void onSelectedDayChange(@NonNull CalendarView view, int year, int month, int dayOfMonth)
+            {
+                selectedDate = Integer.toString(year + month + dayOfMonth);
+                ReadDatabase(view);
+            }
+        });
+
+        try
+        {
+            dbHandler = new mySQLiteDBHandler(this, "MyCalendarDatabase", null, 1);
+            sqLiteDatabase = dbHandler.getWritableDatabase();
+            sqLiteDatabase.execSQL("CREATE TABLE EventClock(Date TEXT, Event TEXT)");
+        }
+        catch (Exception e)
+        {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void InsertDatabase(View view)
+    {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("Date", selectedDate);
+        contentValues.put("Event", editText.getText().toString());
+        sqLiteDatabase.insert("EventClock", null, contentValues);
+    }
+
+    public void ReadDatabase(View view)
+    {
+        String query = "Select Event from EventClock where Date = " + selectedDate;
+
+        try
+        {
+            Cursor cursor = sqLiteDatabase.rawQuery(query,null);
+            cursor.moveToFirst();
+            editText.setText(cursor.getString(0));
+        }
+        catch (Exception e)
+        {
+            editText.setText("");
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+}
